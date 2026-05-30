@@ -32,11 +32,12 @@ venv/
 build/
 dist/
 
-# Local data / artifacts
-data/
+# Local data / artifacts — everything under data/ is ignored except the
+# committed seed dataset under data/seed/ (small, deterministic, used by
+# the tutorial so the repo is runnable from clone).
+data/*
+!data/seed/
 artifacts/
-*.parquet
-*.csv
 
 # Tutorial scratch
 docs/tutorial/files.zip

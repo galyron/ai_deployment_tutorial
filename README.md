@@ -49,7 +49,7 @@ Each phase is self-contained and ends with a `git commit` checkpoint. Every step
 | Phase | File | Capabilities | Budget |
 |---|---|---|---|
 | 0 | [Setup & scaffolding](docs/tutorial/phase_0_setup.md) | Deployment foundation, project hygiene | 1.5–2h |
-| 1 | [Synthetic data generation](docs/tutorial/phase_1_data.md) | Qualitative + quantitative inputs | 1–1.5h |
+| 1 | [Data: loading, streaming, ensembling](docs/tutorial/phase_1_data.md) | IO surface over the seed dataset | 45m–1h |
 | 2 | [Retrieval + grounding layer](docs/tutorial/phase_2_retrieval.md) | RAG, source traceability | 1.5h |
 | 3 | [Predictive tool](docs/tutorial/phase_3_predictive.md) | Tool/function calling | 1h |
 | 4 | [Agentic orchestration](docs/tutorial/phase_4_orchestration.md) | Workflow design, multi-agent, state, HITL | 2–2.5h |
@@ -57,7 +57,17 @@ Each phase is self-contained and ends with a `git commit` checkpoint. Every step
 | 6 | [Observability + guardrails](docs/tutorial/phase_6_observability.md) | Tracing, cost, latency, guardrails | 1h |
 | 7 | [Deploy](docs/tutorial/phase_7_deploy.md) | Model selection + cloud deployment | 1.5h |
 
-Total: 11–13h. If time-constrained, the cut order (per the brief) is *(1)* trim Phase 6 to tracing only, then *(2)* simplify Phase 5 to groundedness only. Phases 4 and 7 are protected.
+Total: ~10–12h. If time-constrained, the cut order (per the brief) is *(1)* trim Phase 6 to tracing only, then *(2)* simplify Phase 5 to groundedness only. Phases 4 and 7 are protected.
+
+## The seed dataset
+
+`data/seed/` ships with the repo: `accounts_quant.csv` (50 HCP accounts) and `accounts_qual.jsonl` (173 free-text documents — rep call notes, MSL summaries, competitive-intel snippets, market-research paragraphs). Total size ~45KB.
+
+It's committed because it's small enough to keep the repo runnable from clone — no LLM call, no provisioning, no fetch step before you can start Phase 1. Five of the accounts (`HCP-001` through `HCP-005`) are deliberately seeded with conflicting signals; Phase 5 uses them as eval ground truth.
+
+This is a tutorial-scope convenience trade-off. In a real ingest path, data lives in cloud storage (Blob, Lakehouse, warehouse), not in git. Don't copy the pattern to production work.
+
+`scripts/seed_data.py` is the generator: stdlib-only, deterministic, with invariant checks on the tension accounts. You don't need to run it — the output is already on disk. It's there as documentation of how the seed was built and lets you regenerate or extend it if you want.
 
 ## Repository layout (after completion)
 
@@ -74,9 +84,11 @@ account-strategy-synthesizer/
 │   ├── evals/       groundedness + LLM judge
 │   ├── guardrails/  data minimization
 │   └── api/         FastAPI app
-├── scripts/         one-off runners for each phase's self-check
+├── scripts/         one-off runners + seed_data.py (deterministic seed generator)
 ├── tests/           pytest unit tests (guardrails contract)
-├── data/            generated quant/qual data + syntheses (gitignored)
+├── data/
+│   ├── seed/        committed seed dataset (CSV + JSONL, ~45KB)
+│   └── ...          artefacts you produce (syntheses, eval results — gitignored)
 ├── Dockerfile, .dockerignore
 └── docs/tutorial/   plan + brief + the eight phase files
 ```

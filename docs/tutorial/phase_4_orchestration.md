@@ -88,10 +88,10 @@ QUERIES = [
 ]
 
 def extract_node(state: GraphState) -> GraphState:
-    acct = state["account_id"]
+    acnt = state["account_id"]
     seen: dict[str, EvidenceItem] = {}
     for q in QUERIES:
-        for hit in retrieve(acct, q, k=4):
+        for hit in retrieve(acnt, q, k=4):
             key = hit.text[:60]  # cheap dedupe; chunk_id isn't returned by retrieve
             if key in seen:
                 continue

@@ -320,10 +320,10 @@ cases = [
     ("HCP-003", "customer satisfaction signals", "rep_call_note"),
     ("HCP-004", "competitor Brand-X",   "market_research"),
 ]
-for acct, q, expected in cases:
-    hits = retrieve(acct, q, k=4)
+for acnt, q, expected in cases:
+    hits = retrieve(acnt, q, k=4)
     types = [h.source_type for h in hits]
-    print(acct, "->", types, "OK" if expected in types[:3] else "MISS")
+    print(acnt, "->", types, "OK" if expected in types[:3] else "MISS")
 ```
 
 ```bash

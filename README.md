@@ -95,7 +95,7 @@ account-strategy-synthesizer/
 
 ## Tear-down (single command)
 
-Everything in this tutorial lives inside one Azure resource group named `rg-acct-strategy`. Phase 7 ends with:
+Everything in this tutorial lives inside one Azure resource group named `rg-acnt-strat-synth`. Phase 7 ends with:
 
 ```bash
 az group delete --name "$RG" --yes --no-wait

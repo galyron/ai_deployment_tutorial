@@ -12,7 +12,7 @@
 
 **Do:**
 - Sign up at `https://smith.langchain.com` (free tier is fine).
-- Create a project named `acct-strategy`.
+- Create a project named `acnt-strat-synth`.
 - Generate a personal API key.
 - Append to `.env`.
 
@@ -21,7 +21,7 @@
 cat >> .env <<'EOF'
 LANGSMITH_TRACING=true
 LANGSMITH_API_KEY=lsv2_pt_xxxxxxxxxxxx
-LANGSMITH_PROJECT=acct-strategy
+LANGSMITH_PROJECT=acnt-strat-synth
 LANGSMITH_ENDPOINT=https://api.smith.langchain.com
 EOF
 ```
@@ -63,7 +63,7 @@ print(state["synthesis"].headline)
 uv run python scripts/trace_one.py
 ```
 
-**Self-check:** Open `https://smith.langchain.com` → project `acct-strategy`. The most recent trace has these spans (collapsed):
+**Self-check:** Open `https://smith.langchain.com` → project `acnt-strat-synth`. The most recent trace has these spans (collapsed):
 - `LangGraph` (root) with thread_id `trace-demo`
   - `extract` — N retrieval calls
   - `score` — `account_risk_score` tool span

@@ -71,7 +71,7 @@ All four lines must succeed without errors.
 
 **Do:**
 - `az login` and select the new subscription.
-- Create `rg-acct-strategy` in `westeurope` (closest region with Azure OpenAI capacity at time of writing — adjust if your free trial defaults elsewhere).
+- Create `rg-acnt-strat-synth` in `westeurope` (closest region with Azure OpenAI capacity at time of writing — adjust if your free trial defaults elsewhere).
 - Export the resource group name so later steps reuse it.
 
 **Code / commands:**
@@ -79,7 +79,7 @@ All four lines must succeed without errors.
 az login
 az account set --subscription "<your-subscription-id>"
 
-export RG=rg-acct-strategy
+export RG=rg-acnt-strat-synth
 export LOC=westeurope
 az group create --name "$RG" --location "$LOC"
 
@@ -113,7 +113,7 @@ az group show --name "$RG" --query "properties.provisioningState" -o tsv
 
 **Code / commands:**
 ```bash
-export AOAI=aoai-acct-strategy-$RANDOM
+export AOAI=aoai-acnt-strat-synth-$RANDOM
 az cognitiveservices account create \
   --name "$AOAI" --resource-group "$RG" --location "$LOC" \
   --kind OpenAI --sku S0 --yes
@@ -161,7 +161,7 @@ Both `gpt-4o` and `text-embedding-3-small` rows must show `Succeeded`.
 
 **Code / commands:**
 ```bash
-export SEARCH=srch-acct-strategy-$RANDOM
+export SEARCH=srch-acnt-strat-synth-$RANDOM
 az search service create \
   --name "$SEARCH" --resource-group "$RG" --location "$LOC" \
   --sku free --partition-count 1 --replica-count 1
@@ -169,7 +169,7 @@ az search service create \
 export SEARCH_ENDPOINT="https://$SEARCH.search.windows.net"
 export SEARCH_KEY=$(az search admin-key show --service-name "$SEARCH" --resource-group "$RG" --query primaryKey -o tsv)
 
-export KV=kv-acct-$RANDOM
+export KV=kv-acnt-strat-synth-$RANDOM
 az keyvault create --name "$KV" --resource-group "$RG" --location "$LOC"
 ```
 
@@ -278,7 +278,7 @@ settings = Settings()
 **Self-check:**
 ```bash
 uv run python -c "from src.config import settings; print(settings.chat_deployment, settings.search_endpoint)"
-# Expected: gpt-4o https://srch-acct-strategy-XXXXX.search.windows.net
+# Expected: gpt-4o https://srch-acnt-strat-synth-XXXXX.search.windows.net
 ```
 
 **If broken:**

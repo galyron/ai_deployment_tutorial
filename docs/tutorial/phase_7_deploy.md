@@ -112,8 +112,8 @@ __pycache__/
 
 **Self-check:**
 ```bash
-docker build -t acct-strategy:local .
-docker images | grep acct-strategy
+docker build -t acnt-strat-synth:local .
+docker images | grep acnt-strat-synth
 # Expected: a tag 'local' with a size around 600-800 MB.
 ```
 
@@ -133,18 +133,18 @@ docker images | grep acct-strategy
 
 **Code / commands:**
 ```bash
-docker run --rm -d --name acct -p 8000:8000 --env-file .env acct-strategy:local
+docker run --rm -d --name acnt-strat-synth -p 8000:8000 --env-file .env acnt-strat-synth:local
 sleep 5
 curl -s http://localhost:8000/healthz
 curl -sX POST http://localhost:8000/synthesize -H 'content-type: application/json' \
      -d '{"account_id":"HCP-001"}' | jq '.synthesis.headline'
-docker stop acct
+docker stop acnt-strat-synth
 ```
 
 **Self-check:** Both curls succeed; `synthesis.headline` prints.
 
 **If broken:**
-- Container exits immediately → `docker logs acct` shows the traceback. Almost always a missing env var.
+- Container exits immediately → `docker logs acnt-strat-synth` shows the traceback. Almost always a missing env var.
 
 **Time estimate:** ~10m.
 
@@ -184,14 +184,14 @@ az keyvault secret list --vault-name "$KV" --query "[].name" -o tsv
 
 **Code / commands:**
 ```bash
-export ACR=acracctstrategy$RANDOM
+export ACR=acracntstratsynth$RANDOM
 az acr create --name "$ACR" --resource-group "$RG" --sku Basic --admin-enabled false
-az acr build --registry "$ACR" --image acct-strategy:v1 .
+az acr build --registry "$ACR" --image acnt-strat-synth:v1 .
 ```
 
 **Self-check:**
 ```bash
-az acr repository show-tags --name "$ACR" --repository acct-strategy -o tsv
+az acr repository show-tags --name "$ACR" --repository acnt-strat-synth -o tsv
 # Expected: v1
 ```
 
@@ -213,14 +213,14 @@ az acr repository show-tags --name "$ACR" --repository acct-strategy -o tsv
 
 **Code / commands:**
 ```bash
-export CAENV=cae-acct-strategy
-export APP=acct-strategy-api
+export CAENV=cae-acnt-strat-synth
+export APP=acnt-strat-synth-api
 
 az containerapp env create --name "$CAENV" --resource-group "$RG" --location "$LOC"
 
 az containerapp create \
   --name "$APP" --resource-group "$RG" --environment "$CAENV" \
-  --image "$ACR.azurecr.io/acct-strategy:v1" \
+  --image "$ACR.azurecr.io/acnt-strat-synth:v1" \
   --target-port 8000 --ingress external \
   --registry-server "$ACR.azurecr.io" --registry-identity system \
   --system-assigned \

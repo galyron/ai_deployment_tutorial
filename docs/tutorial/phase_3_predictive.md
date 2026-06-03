@@ -17,15 +17,15 @@
 
 **Code / commands:**
 ```bash
-mkdir -p src/predict
-touch src/predict/__init__.py
+mkdir -p acnt_strat_synth/predict
+touch acnt_strat_synth/predict/__init__.py
 ```
 
 ```python
-# src/predict/score.py
+# acnt_strat_synth/predict/score.py
 import math
 import pandas as pd
-from src.data.loader import load_quant
+from acnt_strat_synth.data.loader import load_quant
 
 _FEATURES = ["rx_trend_pct", "nps_proxy", "call_count_last_q", "market_potential_score", "rx_volume_last_q"]
 
@@ -47,7 +47,7 @@ def _risk(row) -> float:
 
 **Self-check:**
 ```bash
-uv run python -c "from src.predict.score import _risk; print(_risk({'rx_trend_pct':-25,'nps_proxy':-40,'call_count_last_q':1,'market_potential_score':4,'rx_volume_last_q':50}))"
+uv run python -c "from acnt_strat_synth.predict.score import _risk; print(_risk({'rx_trend_pct':-25,'nps_proxy':-40,'call_count_last_q':1,'market_potential_score':4,'rx_volume_last_q':50}))"
 # Expected: a value > 0.7
 ```
 
@@ -68,7 +68,7 @@ uv run python -c "from src.predict.score import _risk; print(_risk({'rx_trend_pc
 
 **Code / commands:**
 ```python
-# src/predict/score.py  (append)
+# acnt_strat_synth/predict/score.py  (append)
 _DF = load_quant().set_index("account_id")
 
 def score_account(account_id: str) -> float:
@@ -83,7 +83,7 @@ def score_all() -> dict[str, float]:
 **Self-check:**
 ```bash
 uv run python - <<'PY'
-from src.predict.score import score_account, score_all
+from acnt_strat_synth.predict.score import score_account, score_all
 print("HCP-001:", score_account("HCP-001"))   # rep-over-optimistic: declining Rx -> high risk
 print("HCP-002:", score_account("HCP-002"))   # growing: lower risk
 scores = score_all()
@@ -110,7 +110,7 @@ HCP-001 score should be noticeably higher than HCP-002. Distinct-scores count is
 **Code / commands:**
 ```python
 # scripts/check_scoring.py
-from src.predict.score import score_account
+from acnt_strat_synth.predict.score import score_account
 ids = ["HCP-001", "HCP-002", "HCP-003", "HCP-004", "HCP-005"]
 for aid in sorted(ids, key=score_account, reverse=True):
     print(f"{aid}: {score_account(aid):.3f}")
@@ -138,9 +138,9 @@ uv run python scripts/check_scoring.py
 
 **Code / commands:**
 ```python
-# src/predict/tool.py
+# acnt_strat_synth/predict/tool.py
 from langchain_core.tools import tool
-from src.predict.score import _DF, score_account
+from acnt_strat_synth.predict.score import _DF, score_account
 
 @tool
 def account_risk_score(account_id: str) -> dict:
@@ -153,7 +153,7 @@ def account_risk_score(account_id: str) -> dict:
 **Self-check:**
 ```bash
 uv run python - <<'PY'
-from src.predict.tool import account_risk_score
+from acnt_strat_synth.predict.tool import account_risk_score
 out = account_risk_score.invoke({"account_id": "HCP-001"})
 print(out)
 assert 0 <= out["risk_score"] <= 1
@@ -182,9 +182,9 @@ Prints the dict and `ok`.
 # scripts/tool_smoke.py
 from langchain_openai import AzureChatOpenAI
 from langchain_core.messages import HumanMessage
-from src.predict.tool import account_risk_score
-from src.predict.score import score_account
-from src.config import settings
+from acnt_strat_synth.predict.tool import account_risk_score
+from acnt_strat_synth.predict.score import score_account
+from acnt_strat_synth.config import settings
 
 llm = AzureChatOpenAI(
     azure_endpoint=settings.aoai_endpoint, api_key=settings.aoai_key,

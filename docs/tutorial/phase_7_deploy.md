@@ -11,21 +11,21 @@
 **Goal:** A single `POST /synthesize` route that accepts an account ID, runs the graph, and returns the synthesis JSON.
 
 **Do:**
-- Create `src/api/main.py`.
+- Create `acnt_strat_synth/api/main.py`.
 - Reuse `build_graph()` from Phase 4. Load `.env` on startup.
 
 **Code / commands:**
 ```bash
-mkdir -p src/api
-touch src/api/__init__.py
+mkdir -p acnt_strat_synth/api
+touch acnt_strat_synth/api/__init__.py
 ```
 
 ```python
-# src/api/main.py
+# acnt_strat_synth/api/main.py
 from dotenv import load_dotenv; load_dotenv()
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from src.graph.build import build_graph
+from acnt_strat_synth.graph.build import build_graph
 
 app = FastAPI(title="Account Strategy Synthesizer")
 _graph = build_graph()
@@ -54,7 +54,7 @@ def synthesize(req: SynthRequest):
 
 **Self-check:**
 ```bash
-uv run uvicorn src.api.main:app --port 8000 &
+uv run uvicorn acnt_strat_synth.api.main:app --port 8000 &
 sleep 3
 curl -s http://localhost:8000/healthz
 curl -sX POST http://localhost:8000/synthesize -H 'content-type: application/json' \
@@ -92,11 +92,11 @@ WORKDIR /app
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-install-project --no-dev
 
-COPY src ./src
+COPY acnt_strat_synth ./acnt_strat_synth
 RUN uv sync --frozen --no-dev
 
 EXPOSE 8000
-CMD ["uv", "run", "uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uv", "run", "uvicorn", "acnt_strat_synth.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
 ```
 
 ```

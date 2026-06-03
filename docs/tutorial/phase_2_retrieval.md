@@ -16,14 +16,14 @@
 
 **Code / commands:**
 ```bash
-mkdir -p src/retrieval
-touch src/retrieval/__init__.py
+mkdir -p acnt_strat_synth/retrieval
+touch acnt_strat_synth/retrieval/__init__.py
 ```
 
 ```python
-# src/retrieval/chunk.py
+# acnt_strat_synth/retrieval/chunk.py
 import re, uuid
-from src.data.loader import load_qual
+from acnt_strat_synth.data.loader import load_qual
 from pydantic import BaseModel
 
 class Chunk(BaseModel):
@@ -51,7 +51,7 @@ def build_chunks() -> list[Chunk]:
 
 **Self-check:**
 ```bash
-uv run python -c "from src.retrieval.chunk import build_chunks; c = build_chunks(); print(len(c), c[0].model_dump())"
+uv run python -c "from acnt_strat_synth.retrieval.chunk import build_chunks; c = build_chunks(); print(len(c), c[0].model_dump())"
 ```
 Prints a count (~100–250) and one chunk dict containing `account_id` and `source_type`.
 
@@ -78,7 +78,7 @@ from azure.search.documents.indexes.models import (
     SearchIndex, SimpleField, SearchableField, SearchField, SearchFieldDataType,
     VectorSearch, HnswAlgorithmConfiguration, VectorSearchProfile,
 )
-from src.config import settings
+from acnt_strat_synth.config import settings
 
 client = SearchIndexClient(settings.search_endpoint, AzureKeyCredential(settings.search_key))
 
@@ -110,7 +110,7 @@ uv run python scripts/create_index.py
 uv run python - <<'PY'
 from azure.core.credentials import AzureKeyCredential
 from azure.search.documents.indexes import SearchIndexClient
-from src.config import settings
+from acnt_strat_synth.config import settings
 c = SearchIndexClient(settings.search_endpoint, AzureKeyCredential(settings.search_key))
 idx = c.get_index(settings.search_index)
 print([f.name for f in idx.fields])
@@ -136,9 +136,9 @@ Output lists exactly `['id', 'account_id', 'source_type', 'text', 'content_vecto
 **Code / commands:**
 ```python
 # scripts/embed_chunks.py
-from src.retrieval.chunk import build_chunks
+from acnt_strat_synth.retrieval.chunk import build_chunks
 from langchain_openai import AzureOpenAIEmbeddings
-from src.config import settings
+from acnt_strat_synth.config import settings
 import json, pathlib
 
 chunks = build_chunks()
@@ -182,7 +182,7 @@ uv run python scripts/embed_chunks.py
 import json
 from azure.core.credentials import AzureKeyCredential
 from azure.search.documents import SearchClient
-from src.config import settings
+from acnt_strat_synth.config import settings
 
 client = SearchClient(settings.search_endpoint, settings.search_index, AzureKeyCredential(settings.search_key))
 docs = [json.loads(l) for l in open("data/chunks_embedded.jsonl")]
@@ -202,7 +202,7 @@ uv run python scripts/upload_chunks.py
 uv run python - <<'PY'
 from azure.core.credentials import AzureKeyCredential
 from azure.search.documents import SearchClient
-from src.config import settings
+from acnt_strat_synth.config import settings
 c = SearchClient(settings.search_endpoint, settings.search_index, AzureKeyCredential(settings.search_key))
 print("doc count:", c.get_document_count())
 PY
@@ -226,13 +226,13 @@ Doc count matches the upload count.
 
 **Code / commands:**
 ```python
-# src/retrieval/search.py
+# acnt_strat_synth/retrieval/search.py
 from dataclasses import dataclass
 from azure.core.credentials import AzureKeyCredential
 from azure.search.documents import SearchClient
 from azure.search.documents.models import VectorizedQuery
 from langchain_openai import AzureOpenAIEmbeddings
-from src.config import settings
+from acnt_strat_synth.config import settings
 
 @dataclass
 class Evidence:
@@ -264,7 +264,7 @@ def retrieve(account_id: str, query: str, k: int = 8) -> list[Evidence]:
 **Self-check:**
 ```bash
 uv run python - <<'PY'
-from src.retrieval.search import retrieve
+from acnt_strat_synth.retrieval.search import retrieve
 hits = retrieve("HCP-002", "competitive threat or market dynamics")
 for h in hits[:3]:
     print(h.source_type, round(h.score, 3), h.text[:80])
@@ -290,7 +290,7 @@ Top results include a `comp_intel` chunk; all hits have `account_id == "HCP-002"
 
 **Code / commands:**
 ```bash
-uv run python -c "from src.retrieval.search import retrieve; print(len(retrieve('HCP-005', 'anything')))"
+uv run python -c "from acnt_strat_synth.retrieval.search import retrieve; print(len(retrieve('HCP-005', 'anything')))"
 ```
 
 **Self-check:** Prints `0`.
@@ -312,7 +312,7 @@ uv run python -c "from src.retrieval.search import retrieve; print(len(retrieve(
 **Code / commands:**
 ```python
 # scripts/check_traceability.py
-from src.retrieval.search import retrieve
+from acnt_strat_synth.retrieval.search import retrieve
 
 cases = [
     ("HCP-001", "rep enthusiasm",       "rep_call_note"),

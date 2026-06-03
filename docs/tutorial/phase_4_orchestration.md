@@ -11,17 +11,17 @@
 **Goal:** A single TypedDict that every node reads from and writes to. State carries the account ID, retrieved evidence, the predictive score, the synthesis output, and the HITL flag.
 
 **Do:**
-- Create `src/graph/state.py`.
+- Create `acnt_strat_synth/graph/state.py`.
 - Define `EvidenceItem` (matches the retrieval contract), `Synthesis` (the structured output we want), and `GraphState`.
 
 **Code / commands:**
 ```bash
-mkdir -p src/graph
-touch src/graph/__init__.py
+mkdir -p acnt_strat_synth/graph
+touch acnt_strat_synth/graph/__init__.py
 ```
 
 ```python
-# src/graph/state.py
+# acnt_strat_synth/graph/state.py
 from typing import TypedDict, Optional
 from pydantic import BaseModel, Field
 
@@ -54,7 +54,7 @@ class GraphState(TypedDict, total=False):
 
 **Self-check:**
 ```bash
-uv run python -c "from src.graph.state import GraphState, Synthesis; print(Synthesis.model_fields.keys())"
+uv run python -c "from acnt_strat_synth.graph.state import GraphState, Synthesis; print(Synthesis.model_fields.keys())"
 # Expected: dict_keys(['account_id','headline','claims','next_best_action','competitive_risk_flag','risk_score'])
 ```
 
@@ -75,9 +75,9 @@ uv run python -c "from src.graph.state import GraphState, Synthesis; print(Synth
 
 **Code / commands:**
 ```python
-# src/graph/nodes.py
-from src.graph.state import GraphState, EvidenceItem
-from src.retrieval.search import retrieve
+# acnt_strat_synth/graph/nodes.py
+from acnt_strat_synth.graph.state import GraphState, EvidenceItem
+from acnt_strat_synth.retrieval.search import retrieve
 import uuid
 
 QUERIES = [
@@ -107,7 +107,7 @@ def extract_node(state: GraphState) -> GraphState:
 **Self-check:**
 ```bash
 uv run python - <<'PY'
-from src.graph.nodes import extract_node
+from acnt_strat_synth.graph.nodes import extract_node
 s = extract_node({"account_id": "HCP-002"})
 print(len(s["evidence"]), "items")
 print({e.source_type for e in s["evidence"]})
@@ -128,8 +128,8 @@ At least 2 evidence items; `source_type` set includes `comp_intel`.
 
 **Code / commands:**
 ```python
-# src/graph/nodes.py  (append)
-from src.predict.tool import account_risk_score
+# acnt_strat_synth/graph/nodes.py  (append)
+from acnt_strat_synth.predict.tool import account_risk_score
 
 def score_node(state: GraphState) -> GraphState:
     out = account_risk_score.invoke({"account_id": state["account_id"]})
@@ -138,7 +138,7 @@ def score_node(state: GraphState) -> GraphState:
 
 **Self-check:**
 ```bash
-uv run python -c "from src.graph.nodes import score_node; print(score_node({'account_id':'HCP-001'})['score'])"
+uv run python -c "from acnt_strat_synth.graph.nodes import score_node; print(score_node({'account_id':'HCP-001'})['score'])"
 # Expected dict with risk_score, features
 ```
 
@@ -160,11 +160,11 @@ uv run python -c "from src.graph.nodes import score_node; print(score_node({'acc
 
 **Code / commands:**
 ```python
-# src/graph/nodes.py  (append)
+# acnt_strat_synth/graph/nodes.py  (append)
 from langchain_openai import AzureChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage
-from src.graph.state import Synthesis
-from src.config import settings
+from acnt_strat_synth.graph.state import Synthesis
+from acnt_strat_synth.config import settings
 
 _llm_synth = AzureChatOpenAI(
     azure_endpoint=settings.aoai_endpoint, api_key=settings.aoai_key,
@@ -200,7 +200,7 @@ def synth_node(state):
 **Self-check:**
 ```bash
 uv run python - <<'PY'
-from src.graph.nodes import extract_node, score_node, synth_node
+from acnt_strat_synth.graph.nodes import extract_node, score_node, synth_node
 s = extract_node({"account_id": "HCP-002"})
 s = score_node(s)
 s = synth_node(s)
@@ -227,16 +227,16 @@ Headline prints; ungrounded count is `0`.
 **Goal:** A compiled graph: `extract → score → synth → END`, with a checkpointer so we can pause and resume in the next steps.
 
 **Do:**
-- Create `src/graph/build.py`.
+- Create `acnt_strat_synth/graph/build.py`.
 - Use `MemorySaver` for the in-process checkpointer.
 
 **Code / commands:**
 ```python
-# src/graph/build.py
+# acnt_strat_synth/graph/build.py
 from langgraph.graph import StateGraph, END, START
 from langgraph.checkpoint.memory import MemorySaver
-from src.graph.state import GraphState
-from src.graph.nodes import extract_node, score_node, synth_node
+from acnt_strat_synth.graph.state import GraphState
+from acnt_strat_synth.graph.nodes import extract_node, score_node, synth_node
 
 def build_graph():
     g = StateGraph(GraphState)
@@ -252,7 +252,7 @@ def build_graph():
 
 **Self-check:**
 ```bash
-uv run python -c "from src.graph.build import build_graph; g = build_graph(); print(g.get_graph().draw_ascii())"
+uv run python -c "from acnt_strat_synth.graph.build import build_graph; g = build_graph(); print(g.get_graph().draw_ascii())"
 ```
 Prints an ASCII diagram with `extract` → `score` → `synth` → `__end__`.
 
@@ -273,7 +273,7 @@ Prints an ASCII diagram with `extract` → `score` → `synth` → `__end__`.
 **Code / commands:**
 ```python
 # scripts/run_one.py
-from src.graph.build import build_graph
+from acnt_strat_synth.graph.build import build_graph
 
 g = build_graph()
 cfg = {"configurable": {"thread_id": "demo-1"}}
@@ -311,11 +311,11 @@ uv run python scripts/run_one.py
 
 **Code / commands:**
 ```python
-# src/graph/build.py  (replace previous build_graph)
+# acnt_strat_synth/graph/build.py  (replace previous build_graph)
 from langgraph.graph import StateGraph, END, START
 from langgraph.checkpoint.memory import MemorySaver
-from src.graph.state import GraphState
-from src.graph.nodes import extract_node, score_node, synth_node
+from acnt_strat_synth.graph.state import GraphState
+from acnt_strat_synth.graph.nodes import extract_node, score_node, synth_node
 
 def _gate(state: GraphState):
     if state.get("review_required") and not state.get("approved"):
@@ -343,7 +343,7 @@ def build_graph():
 
 ```python
 # scripts/run_one.py  (replace)
-from src.graph.build import build_graph
+from acnt_strat_synth.graph.build import build_graph
 
 g = build_graph()
 cfg = {"configurable": {"thread_id": "auto-1"}}
@@ -376,7 +376,7 @@ uv run python scripts/run_one.py
 **Code / commands:**
 ```python
 # scripts/run_hitl.py
-from src.graph.build import build_graph
+from acnt_strat_synth.graph.build import build_graph
 
 g = build_graph()
 cfg = {"configurable": {"thread_id": "hitl-1"}}
@@ -421,8 +421,8 @@ uv run python scripts/run_hitl.py
 # scripts/run_batch.py
 import json
 from pathlib import Path
-from src.graph.build import build_graph
-from src.data.loader import load_quant
+from acnt_strat_synth.graph.build import build_graph
+from acnt_strat_synth.data.loader import load_quant
 
 g = build_graph()
 ids = sorted(load_quant()["account_id"].tolist())

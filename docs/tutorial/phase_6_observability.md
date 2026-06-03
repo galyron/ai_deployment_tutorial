@@ -51,7 +51,7 @@ uv run python -c "import os; from dotenv import load_dotenv; load_dotenv(); prin
 ```python
 # scripts/trace_one.py
 from dotenv import load_dotenv; load_dotenv()
-from src.graph.build import build_graph
+from acnt_strat_synth.graph.build import build_graph
 
 g = build_graph()
 cfg = {"configurable": {"thread_id": "trace-demo"}, "tags": ["tutorial", "phase-6"]}
@@ -72,7 +72,7 @@ uv run python scripts/trace_one.py
 Take the screenshot of this trace tree; this is the "trace you can point at" deliverable.
 
 **If broken:**
-- No trace shows up → `LANGSMITH_TRACING=true` was not loaded; ensure `load_dotenv()` runs *before* importing `src.graph.build`.
+- No trace shows up → `LANGSMITH_TRACING=true` was not loaded; ensure `load_dotenv()` runs *before* importing `acnt_strat_synth.graph.build`.
 
 **Time estimate:** ~10m.
 
@@ -105,7 +105,7 @@ Take the screenshot of this trace tree; this is the "trace you can point at" del
 
 **Code / commands:**
 ```python
-# src/guardrails/minimize.py
+# acnt_strat_synth/guardrails/minimize.py
 import re
 
 EMAIL = re.compile(r"\b[\w.+-]+@[\w-]+\.[\w.-]+\b")
@@ -120,15 +120,15 @@ def minimize(text: str) -> str:
 ```
 
 ```bash
-mkdir -p src/guardrails
-touch src/guardrails/__init__.py
+mkdir -p acnt_strat_synth/guardrails
+touch acnt_strat_synth/guardrails/__init__.py
 ```
 
 Wire it into the extract node:
 
 ```python
-# src/graph/nodes.py  (modify extract_node)
-from src.guardrails.minimize import minimize
+# acnt_strat_synth/graph/nodes.py  (modify extract_node)
+from acnt_strat_synth.guardrails.minimize import minimize
 # ...
             seen[key] = EvidenceItem(
                 chunk_id=f"E-{len(seen)+1:03d}",
@@ -140,7 +140,7 @@ from src.guardrails.minimize import minimize
 
 **Self-check:**
 ```bash
-uv run python -c "from src.guardrails.minimize import minimize; print(minimize('Contact Dr. Anna Lee at anna.lee@example.com or +44 20 7946 0958'))"
+uv run python -c "from acnt_strat_synth.guardrails.minimize import minimize; print(minimize('Contact Dr. Anna Lee at anna.lee@example.com or +44 20 7946 0958'))"
 # Expected: Contact [person] at [email] or [phone]
 ```
 
@@ -158,7 +158,7 @@ uv run python -c "from src.guardrails.minimize import minimize; print(minimize('
 **Code / commands:**
 ```python
 # tests/test_minimize.py
-from src.guardrails.minimize import minimize
+from acnt_strat_synth.guardrails.minimize import minimize
 
 def test_email_redacted():
     assert minimize("write to foo@bar.com") == "write to [email]"
@@ -198,7 +198,7 @@ uv add opentelemetry-sdk opentelemetry-exporter-otlp azure-monitor-opentelemetry
 ```
 
 ```python
-# src/observability.py
+# acnt_strat_synth/observability.py
 from azure.monitor.opentelemetry import configure_azure_monitor
 import os
 

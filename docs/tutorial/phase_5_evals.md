@@ -15,12 +15,12 @@
 
 **Code / commands:**
 ```bash
-mkdir -p src/evals
-touch src/evals/__init__.py
+mkdir -p acnt_strat_synth/evals
+touch acnt_strat_synth/evals/__init__.py
 ```
 
 ```python
-# src/evals/ground_truth.py
+# acnt_strat_synth/evals/ground_truth.py
 # Each entry: account_id -> expected behaviour.
 # `must_flag` = competitive_risk_flag must be True.
 # `must_mention_substr` = synthesis text must include this substring (case-insensitive).
@@ -42,7 +42,7 @@ GROUND_TRUTH = {
 
 **Self-check:**
 ```bash
-uv run python -c "from src.evals.ground_truth import GROUND_TRUTH; print(len(GROUND_TRUTH))"
+uv run python -c "from acnt_strat_synth.evals.ground_truth import GROUND_TRUTH; print(len(GROUND_TRUTH))"
 # Expected: 5
 ```
 
@@ -60,9 +60,9 @@ uv run python -c "from src.evals.ground_truth import GROUND_TRUTH; print(len(GRO
 
 **Code / commands:**
 ```python
-# src/evals/groundedness.py
+# acnt_strat_synth/evals/groundedness.py
 import json
-from src.graph.nodes import extract_node
+from acnt_strat_synth.graph.nodes import extract_node
 
 _evidence_cache: dict[str, set[str]] = {}
 
@@ -96,7 +96,7 @@ def evaluate_all(path: str = "data/syntheses.jsonl") -> list[dict]:
 **Self-check:**
 ```bash
 uv run python - <<'PY'
-from src.evals.groundedness import evaluate_all
+from acnt_strat_synth.evals.groundedness import evaluate_all
 res = evaluate_all()
 pass_rate = sum(r["pass"] for r in res) / len(res)
 print(f"groundedness pass rate: {pass_rate:.0%}")
@@ -122,13 +122,13 @@ Pass rate >= 95% (one or two stragglers acceptable; if more, the synthesis promp
 
 **Code / commands:**
 ```python
-# src/evals/judge.py
+# acnt_strat_synth/evals/judge.py
 import json
 from pydantic import BaseModel, Field
 from langchain_openai import AzureChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage
-from src.evals.ground_truth import GROUND_TRUTH
-from src.config import settings
+from acnt_strat_synth.evals.ground_truth import GROUND_TRUTH
+from acnt_strat_synth.config import settings
 
 class Judgement(BaseModel):
     score: int = Field(ge=1, le=5)
@@ -164,7 +164,7 @@ def judge_one(synth_row: dict) -> Judgement:
 ```bash
 uv run python - <<'PY'
 import json
-from src.evals.judge import judge_one
+from acnt_strat_synth.evals.judge import judge_one
 row = next(json.loads(l) for l in open("data/syntheses.jsonl") if json.loads(l)["account_id"] == "HCP-002")
 j = judge_one(row)
 print(j.score, "-", j.reason[:120])
@@ -190,9 +190,9 @@ Prints a score 1–5 and a one-sentence reason.
 ```python
 # scripts/run_evals.py
 import json, csv, pathlib
-from src.evals.groundedness import evaluate_one
-from src.evals.judge import judge_one
-from src.evals.ground_truth import GROUND_TRUTH
+from acnt_strat_synth.evals.groundedness import evaluate_one
+from acnt_strat_synth.evals.judge import judge_one
+from acnt_strat_synth.evals.ground_truth import GROUND_TRUTH
 
 rows = [json.loads(l) for l in open("data/syntheses.jsonl")]
 out = []
@@ -250,7 +250,7 @@ uv run python scripts/run_evals.py
 ```python
 # scripts/summarize_evals.py
 import pandas as pd
-from src.evals.ground_truth import GROUND_TRUTH
+from acnt_strat_synth.evals.ground_truth import GROUND_TRUTH
 
 df = pd.read_csv("data/eval_results.csv")
 

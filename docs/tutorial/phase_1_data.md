@@ -84,17 +84,17 @@ grep -F 'Brand-X' data/seed/accounts_qual.jsonl | wc -l    # must print 1
 **Goal:** Typed objects for `AccountQuant` and `QualDoc` so downstream code gets autocomplete and rejects malformed records at the boundary.
 
 **Do:**
-- Create `src/data/schemas.py`.
+- Create `acnt_strat_synth/data/schemas.py`.
 - Use pydantic v2 — same dependency the synthesis node will use for structured output in Phase 4.
 
 **Code / commands:**
 ```bash
-mkdir -p src/data
-touch src/__init__.py src/data/__init__.py
+mkdir -p acnt_strat_synth/data
+touch acnt_strat_synth/__init__.py acnt_strat_synth/data/__init__.py
 ```
 
 ```python
-# src/data/schemas.py
+# acnt_strat_synth/data/schemas.py
 from typing import Literal
 from pydantic import BaseModel, Field
 
@@ -120,7 +120,7 @@ class QualDoc(BaseModel):
 
 **Self-check:**
 ```bash
-uv run python -c "from src.data.schemas import AccountQuant, QualDoc; print(list(AccountQuant.model_fields), list(QualDoc.model_fields))"
+uv run python -c "from acnt_strat_synth.data.schemas import AccountQuant, QualDoc; print(list(AccountQuant.model_fields), list(QualDoc.model_fields))"
 ```
 Prints two field lists — eight names for `AccountQuant`, three for `QualDoc`.
 
@@ -133,18 +133,18 @@ Prints two field lists — eight names for `AccountQuant`, three for `QualDoc`.
 **Goal:** `load_quant()` and `load_qual()` return validated, in-memory collections. This is what most downstream code calls.
 
 **Do:**
-- Create `src/data/loader.py`.
+- Create `acnt_strat_synth/data/loader.py`.
 - Read CSV via stdlib (no pandas needed at the data-access layer; downstream code can wrap in a DataFrame if it wants).
 - Read JSONL line by line.
 - Validate each row through the schema.
 
 **Code / commands:**
 ```python
-# src/data/loader.py
+# acnt_strat_synth/data/loader.py
 import csv
 import json
 from pathlib import Path
-from src.data.schemas import AccountQuant, QualDoc
+from acnt_strat_synth.data.schemas import AccountQuant, QualDoc
 
 SEED_DIR = Path(__file__).resolve().parents[2] / "data" / "seed"
 QUANT_PATH = SEED_DIR / "accounts_quant.csv"
@@ -171,7 +171,7 @@ def load_qual() -> list[QualDoc]:
 **Self-check:**
 ```bash
 uv run python - <<'PY'
-from src.data.loader import load_quant, load_qual
+from acnt_strat_synth.data.loader import load_quant, load_qual
 q = load_quant()
 d = load_qual()
 print(f"quant: {len(q)} rows; qual: {len(d)} docs")
@@ -185,7 +185,7 @@ Prints `quant: 50 rows; qual: 173 docs` and `ok`.
 
 **If broken:**
 - `ValidationError` on a row → a CSV value didn't match the schema. Most likely a stale CSV; re-run `python3 scripts/seed_data.py`.
-- `FileNotFoundError` → run commands from the repo root, not from `src/`.
+- `FileNotFoundError` → run commands from the repo root, not from `acnt_strat_synth/`.
 
 **Time estimate:** ~15m.
 
@@ -196,12 +196,12 @@ Prints `quant: 50 rows; qual: 173 docs` and `ok`.
 **Goal:** `iter_accounts()` yields `(AccountQuant, list[QualDoc])` pairs lazily, one account at a time. This is the shape downstream batch jobs (Phase 4 batch run, Phase 5 evals) want when memory matters less than predictable per-record processing.
 
 **Do:**
-- Add `iter_accounts()` to `src/data/loader.py`.
+- Add `iter_accounts()` to `acnt_strat_synth/data/loader.py`.
 - Stream the qual JSONL once, group docs by account ID via a dict, then yield (quant, docs) tuples in quant-row order. HCP-005 yields an empty list — do not skip it.
 
 **Code / commands:**
 ```python
-# src/data/loader.py  (append)
+# acnt_strat_synth/data/loader.py  (append)
 import json
 from collections.abc import Iterator
 
@@ -225,7 +225,7 @@ def iter_accounts() -> Iterator[tuple[AccountQuant, list[QualDoc]]]:
 **Self-check:**
 ```bash
 uv run python - <<'PY'
-from src.data.loader import iter_accounts
+from acnt_strat_synth.data.loader import iter_accounts
 counts = {q.account_id: len(docs) for q, docs in iter_accounts()}
 assert len(counts) == 50
 assert counts["HCP-005"] == 0
@@ -251,15 +251,15 @@ Prints `total qual docs via iterator: 173` and `ok`.
 **Goal:** A function `assemble(account_id)` that produces the dict the LLM-facing nodes want. Decouples "what shape the data is on disk" from "what shape the LLM prompt expects."
 
 **Do:**
-- Add `src/data/ensemble.py`.
+- Add `acnt_strat_synth/data/ensemble.py`.
 - Return `{account_id, features, docs_by_source}` where `features` is the quant fields the predictive tool reads and `docs_by_source` groups qualitative text by `source_type`.
 - This is the contract Phase 3 (predictive tool input), Phase 4 (synthesis node prompt), and Phase 5 (eval harness) all consume — so set it once here.
 
 **Code / commands:**
 ```python
-# src/data/ensemble.py
+# acnt_strat_synth/data/ensemble.py
 from typing import TypedDict
-from src.data.loader import load_quant, _qual_by_account
+from acnt_strat_synth.data.loader import load_quant, _qual_by_account
 
 class Payload(TypedDict):
     account_id: str
@@ -295,7 +295,7 @@ def assemble(account_id: str) -> Payload:
 **Self-check:**
 ```bash
 uv run python - <<'PY'
-from src.data.ensemble import assemble
+from acnt_strat_synth.data.ensemble import assemble
 
 p = assemble("HCP-002")
 print("HCP-002 sources:", list(p["docs_by_source"]))
@@ -326,9 +326,9 @@ Prints the source list for HCP-002 and `ok`.
 
 After Phase 1, the rest of the tutorial calls into this surface and nothing else:
 
-- `src.data.loader.load_quant()` / `load_qual()` — eager loads with schema validation.
-- `src.data.loader.iter_accounts()` — streaming pairs for batch jobs.
-- `src.data.ensemble.assemble(account_id)` — the per-account payload Phase 3, 4, and 5 consume.
+- `acnt_strat_synth.data.loader.load_quant()` / `load_qual()` — eager loads with schema validation.
+- `acnt_strat_synth.data.loader.iter_accounts()` — streaming pairs for batch jobs.
+- `acnt_strat_synth.data.ensemble.assemble(account_id)` — the per-account payload Phase 3, 4, and 5 consume.
 
 You are not expected to come back here. If something downstream is wrong with the data, it's because the seed file was edited or `assemble()` lost a field — both easy to bisect.
 

@@ -243,7 +243,7 @@ az containerapp update --name "$APP" --resource-group "$RG" --set-env-vars \
   AZURE_OPENAI_ENDPOINT="$AOAI_ENDPOINT" \
   AZURE_OPENAI_API_VERSION="2024-10-21" \
   AZURE_OPENAI_CHAT_DEPLOYMENT="gpt-4o" \
-  AZURE_OPENAI_EMBED_DEPLOYMENT="text-embedding-3-small" \
+  AZURE_OPENAI_EMBED_DEPLOYMENT="text-embedding-ada-002" \
   AZURE_SEARCH_ENDPOINT="$SEARCH_ENDPOINT" \
   AZURE_SEARCH_INDEX="hcp-evidence" \
   AZURE_OPENAI_KEY=secretref:aoai-key \

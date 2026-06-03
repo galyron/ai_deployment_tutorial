@@ -102,51 +102,106 @@ az group show --name "$RG" --query "properties.provisioningState" -o tsv
 
 ---
 
-### Step 0.4 — Create Azure OpenAI and deploy GPT-4o + embeddings
+### Step 0.4 — Create Azure OpenAI, check quota, deploy embeddings, request chat quota
 
-**Goal:** A deployed chat model and a deployed embedding model you can call from Python.
+**Goal:** A live Azure OpenAI resource, a deployed embedding model you can call immediately, and a pending GPT-4o quota request so chat is unblocked by the time you need it.
+
+> **Why this step is longer than it looks.** On a fresh free-tier subscription in 2026, Microsoft ships **zero default quota for GPT-4o** across all SKUs (`Standard`, `GlobalStandard`, `DataZoneStandard`, `Batch`, `Provisioned`). You have to request it. Embedding quota is also zero for the modern `text-embedding-3-*` models, but the older `text-embedding-ada-002` ships with usable default quota (~240K TPM) and produces the same 1536-dimensional vectors Phase 2 expects. So: deploy ada-002 now, request GPT-4o quota in parallel, continue to Step 0.5 while you wait.
+>
+> **Where quota lives.** Azure OpenAI quota management moved into **Azure AI Foundry** (`https://ai.azure.com`). The older *Portal → Cognitive Services → Quotas* path is deprecated for OpenAI. The `az cognitiveservices` CLI still works against the same resource — only the management UI moved.
 
 **Do:**
-- Create an Azure OpenAI resource (kind `OpenAI`, SKU `S0`).
-- Deploy `gpt-4o` and `text-embedding-3-small` under known deployment names.
-- Grab the endpoint and key.
 
-**Code / commands:**
+**(a) Create the Azure OpenAI resource.**
+
 ```bash
 export AOAI=aoai-acnt-strat-synth-$RANDOM
 az cognitiveservices account create \
   --name "$AOAI" --resource-group "$RG" --location "$LOC" \
   --kind OpenAI --sku S0 --yes
 
-az cognitiveservices account deployment create \
-  --name "$AOAI" --resource-group "$RG" \
-  --deployment-name gpt-4o \
-  --model-name gpt-4o --model-version "2024-08-06" --model-format OpenAI \
-  --sku-name Standard --sku-capacity 10
-
-az cognitiveservices account deployment create \
-  --name "$AOAI" --resource-group "$RG" \
-  --deployment-name text-embedding-3-small \
-  --model-name text-embedding-3-small --model-version "1" --model-format OpenAI \
-  --sku-name Standard --sku-capacity 10
-
 export AOAI_ENDPOINT=$(az cognitiveservices account show --name "$AOAI" --resource-group "$RG" --query properties.endpoint -o tsv)
 export AOAI_KEY=$(az cognitiveservices account keys list --name "$AOAI" --resource-group "$RG" --query key1 -o tsv)
 ```
 
-**Self-check:**
+**(b) Inspect what quota you actually have in this region.** Don't guess — the table is canonical.
+
+```bash
+az cognitiveservices usage list --location "$LOC" \
+  --query "[?contains(name.value, 'gpt-4o') || contains(name.value, 'embedding')].{name:name.value, current:currentValue, limit:limit}" \
+  -o table
+```
+
+Read off the `limit` column for the two rows you care about:
+- `OpenAI.GlobalStandard.gpt-4o` — likely `0` on a fresh sub. That's the row you'll request quota for in step (d).
+- `OpenAI.Standard.text-embedding-ada-002` — should be `240` or similar. That's what you'll deploy in step (c).
+
+**(c) Deploy `text-embedding-ada-002`** — usable immediately, 1536-d, same dimension as `text-embedding-3-small`, Phase 2 needs no changes.
+
+```bash
+az cognitiveservices account deployment create \
+  --name "$AOAI" --resource-group "$RG" \
+  --deployment-name text-embedding-ada-002 \
+  --model-name text-embedding-ada-002 --model-version "2" --model-format OpenAI \
+  --sku-name Standard --sku-capacity 10
+```
+
+(`--sku-capacity 10` means 10K tokens/minute — plenty for the tutorial, well under the 240K cap.)
+
+**(d) Request GPT-4o quota in Azure AI Foundry.** This is the gating action. Do it now and move on; approval usually lands in minutes to a few hours.
+
+1. Open `https://ai.azure.com`.
+2. Bottom-left → **Management center** → **Quota**.
+3. **Azure OpenAI** tab → select your subscription.
+4. Filter: region = your `$LOC`, model = `gpt-4o`, SKU = `GlobalStandard`.
+5. Click **Request quota**. Ask for **30** (= 30K TPM). Small free-tier asks like this typically auto-approve.
+
+> **If you don't want to wait:** check whether another region has non-zero defaults.
+>
+> ```bash
+> for region in swedencentral eastus eastus2 northcentralus; do
+>   echo "== $region =="
+>   az cognitiveservices usage list --location "$region" \
+>     --query "[?name.value=='OpenAI.GlobalStandard.gpt-4o'].{limit:limit}" -o tsv
+> done
+> ```
+>
+> If one shows a non-zero limit, delete the westeurope AOAI account, recreate in that region, and re-export `$LOC`, `$AOAI`, `$AOAI_ENDPOINT`, `$AOAI_KEY`.
+
+**(e) Once Foundry approval lands, deploy `gpt-4o`** with the `GlobalStandard` SKU.
+
+```bash
+az cognitiveservices account deployment create \
+  --name "$AOAI" --resource-group "$RG" \
+  --deployment-name gpt-4o \
+  --model-name gpt-4o --model-version "2024-08-06" --model-format OpenAI \
+  --sku-name GlobalStandard --sku-capacity 10
+```
+
+While waiting for approval, work through **Steps 0.5 through 0.7** (AI Search, Key Vault, `uv` project, `.env`). Return here to run (e), then jump to Step 0.8.
+
+**Self-check (after (c)):** The embedding deployment is live.
+```bash
+az cognitiveservices account deployment show \
+  --name "$AOAI" --resource-group "$RG" --deployment-name text-embedding-ada-002 \
+  --query "properties.provisioningState" -o tsv
+# Expected: Succeeded
+```
+
+**Self-check (after (e)):** Both deployments are live.
 ```bash
 az cognitiveservices account deployment list \
   --name "$AOAI" --resource-group "$RG" \
   --query "[].{name:name, state:properties.provisioningState}" -o table
+# Expected: gpt-4o and text-embedding-ada-002 both Succeeded.
 ```
-Both `gpt-4o` and `text-embedding-3-small` rows must show `Succeeded`.
 
 **If broken:**
-- `DeploymentModelNotSupported` → region lacks capacity for that model version. Try `swedencentral` or `eastus`, or check `az cognitiveservices model list --location $LOC -o table` for available `model-version` values.
-- `QuotaExceeded` → lower `--sku-capacity` to `1`.
+- `InsufficientQuota` on the embedding deploy → check the `limit` for `OpenAI.Standard.text-embedding-ada-002` was actually non-zero in (b). If it's zero, request it in Foundry the same way as gpt-4o.
+- `DeploymentModelNotSupported` → region lacks that exact `model-version`. Run `az cognitiveservices model list --location "$LOC" --query "[?name=='gpt-4o'].{ver:version}" -o table` to see available versions; use the newest one.
+- Foundry quota request still pending after a day → submit a smaller ask (10 instead of 30), or pivot to a different region using the loop above.
 
-**Time estimate:** ~20m.
+**Time estimate:** ~15m active. Foundry quota approval is async; treat (e) as a "return to this step later" gate.
 
 ---
 
@@ -244,7 +299,7 @@ AZURE_OPENAI_ENDPOINT=$AOAI_ENDPOINT
 AZURE_OPENAI_KEY=$AOAI_KEY
 AZURE_OPENAI_API_VERSION=2024-10-21
 AZURE_OPENAI_CHAT_DEPLOYMENT=gpt-4o
-AZURE_OPENAI_EMBED_DEPLOYMENT=text-embedding-3-small
+AZURE_OPENAI_EMBED_DEPLOYMENT=text-embedding-ada-002
 AZURE_SEARCH_ENDPOINT=$SEARCH_ENDPOINT
 AZURE_SEARCH_KEY=$SEARCH_KEY
 AZURE_SEARCH_INDEX=hcp-evidence
@@ -336,7 +391,7 @@ chat: pong
 embedding dims: 1536
 search storage used: 0 bytes
 ```
-(`embedding dims` may differ if you chose a different embedding model; `1536` is correct for `text-embedding-3-small`.)
+(`embedding dims` should be `1536` for both `text-embedding-ada-002` and `text-embedding-3-small` — the vector field in Phase 2 is hard-coded to 1536, so switching between the two later requires no schema change.)
 
 **If broken:**
 - `401 Unauthorized` → wrong key in `.env`. Rotate with `az cognitiveservices account keys list`.

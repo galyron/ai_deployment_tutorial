@@ -29,7 +29,7 @@ These are settled in the planning brief. The tutorial does not re-debate them.
 | Concern | Choice |
 |---|---|
 | Orchestration | LangGraph |
-| LLM | Azure OpenAI GPT-4o + `text-embedding-3-small` |
+| LLM | Azure OpenAI GPT-4o (GlobalStandard SKU, quota requested in Foundry) + `text-embedding-ada-002` (Standard SKU, 1536-d, ships with usable default quota — interchangeable with `text-embedding-3-small` once that quota lands) |
 | Retrieval | Azure AI Search, **free tier** |
 | Predictive tool | Hand-tuned rule scorer (transparent on purpose), wrapped as a LangChain tool |
 | Eval | Custom harness, groundedness + LLM-as-judge |

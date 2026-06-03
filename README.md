@@ -71,9 +71,11 @@ This is a tutorial-scope convenience trade-off. In a real ingest path, data live
 
 ## Repository layout (after completion)
 
+The repo root is the Python project — `uv init` runs here, no wrapper directory.
+
 ```
-account-strategy-synthesizer/
-├── pyproject.toml, uv.lock
+<repo root>/
+├── pyproject.toml, uv.lock, .python-version
 ├── .env                            # gitignored
 ├── src/
 │   ├── config.py

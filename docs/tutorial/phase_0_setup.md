@@ -246,16 +246,21 @@ az keyvault show --name "$KV" --query "properties.provisioningState" -o tsv
 
 **Goal:** A `uv`-managed project with the dependency set used throughout the tutorial.
 
+> This repo *is* the Python project. `pyproject.toml`, `src/`, `scripts/`, `data/`, `docs/`, and `tests/` all live at the repo root — there's no wrapper directory. `uv init --name` sets the package name in `pyproject.toml` without creating a subfolder.
+
 **Do:**
-- Create `account-strategy-synthesizer/` and initialize with `uv`.
+- From the repo root, run `uv init` to add `pyproject.toml`, `uv.lock`, and `.python-version`.
 - Pin Python `3.12`.
 - Add LangGraph, LangChain Azure OpenAI, Azure SDK clients, FastAPI, scikit-learn, pytest.
 
 **Code / commands:**
 ```bash
-mkdir -p ~/code && cd ~/code
-uv init account-strategy-synthesizer --python 3.12
-cd account-strategy-synthesizer
+# Run from the repo root (the directory that already contains README.md and docs/).
+uv init --name acnt-strat-synth --python 3.12
+
+# uv may drop a 'hello.py' starter file at the root — delete it; the project
+# code lives under src/.
+rm -f hello.py
 
 uv add \
   langgraph langchain langchain-openai langchain-core \
@@ -270,11 +275,14 @@ uv add --dev pytest ruff
 ```bash
 uv run python -c "import langgraph, langchain_openai, azure.search.documents, fastapi; print('ok')"
 # Expected single line: ok
+ls pyproject.toml uv.lock .python-version
+# Expected: all three files present at the repo root
 ```
 
 **If broken:**
 - `Cannot determine Python interpreter` → `uv python install 3.12` then re-run `uv init`.
 - A resolver conflict on `openai` vs `langchain-openai` → re-run `uv lock --upgrade`.
+- `uv init` complains it can't initialize because the directory isn't empty → it shouldn't (it's non-destructive for existing files), but if it does, run `uv init --bare --name acnt-strat-synth` instead, which only writes `pyproject.toml`.
 
 **Time estimate:** ~10m.
 

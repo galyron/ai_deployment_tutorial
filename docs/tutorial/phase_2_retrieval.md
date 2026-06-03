@@ -16,12 +16,12 @@
 
 **Code / commands:**
 ```bash
-mkdir -p acnt_strat_synth/retrieval
-touch acnt_strat_synth/retrieval/__init__.py
+mkdir -p src/acnt_strat_synth/retrieval
+touch src/acnt_strat_synth/retrieval/__init__.py
 ```
 
 ```python
-# acnt_strat_synth/retrieval/chunk.py
+# src/acnt_strat_synth/retrieval/chunk.py
 import re, uuid
 from acnt_strat_synth.data.loader import load_qual
 from pydantic import BaseModel
@@ -226,7 +226,7 @@ Doc count matches the upload count.
 
 **Code / commands:**
 ```python
-# acnt_strat_synth/retrieval/search.py
+# src/acnt_strat_synth/retrieval/search.py
 from dataclasses import dataclass
 from azure.core.credentials import AzureKeyCredential
 from azure.search.documents import SearchClient

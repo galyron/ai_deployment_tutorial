@@ -105,7 +105,7 @@ Take the screenshot of this trace tree; this is the "trace you can point at" del
 
 **Code / commands:**
 ```python
-# acnt_strat_synth/guardrails/minimize.py
+# src/acnt_strat_synth/guardrails/minimize.py
 import re
 
 EMAIL = re.compile(r"\b[\w.+-]+@[\w-]+\.[\w.-]+\b")
@@ -120,14 +120,14 @@ def minimize(text: str) -> str:
 ```
 
 ```bash
-mkdir -p acnt_strat_synth/guardrails
-touch acnt_strat_synth/guardrails/__init__.py
+mkdir -p src/acnt_strat_synth/guardrails
+touch src/acnt_strat_synth/guardrails/__init__.py
 ```
 
 Wire it into the extract node:
 
 ```python
-# acnt_strat_synth/graph/nodes.py  (modify extract_node)
+# src/acnt_strat_synth/graph/nodes.py  (modify extract_node)
 from acnt_strat_synth.guardrails.minimize import minimize
 # ...
             seen[key] = EvidenceItem(
@@ -198,7 +198,7 @@ uv add opentelemetry-sdk opentelemetry-exporter-otlp azure-monitor-opentelemetry
 ```
 
 ```python
-# acnt_strat_synth/observability.py
+# src/acnt_strat_synth/observability.py
 from azure.monitor.opentelemetry import configure_azure_monitor
 import os
 

@@ -15,12 +15,12 @@
 
 **Code / commands:**
 ```bash
-mkdir -p acnt_strat_synth/evals
-touch acnt_strat_synth/evals/__init__.py
+mkdir -p src/acnt_strat_synth/evals
+touch src/acnt_strat_synth/evals/__init__.py
 ```
 
 ```python
-# acnt_strat_synth/evals/ground_truth.py
+# src/acnt_strat_synth/evals/ground_truth.py
 # Each entry: account_id -> expected behaviour.
 # `must_flag` = competitive_risk_flag must be True.
 # `must_mention_substr` = synthesis text must include this substring (case-insensitive).
@@ -60,7 +60,7 @@ uv run python -c "from acnt_strat_synth.evals.ground_truth import GROUND_TRUTH; 
 
 **Code / commands:**
 ```python
-# acnt_strat_synth/evals/groundedness.py
+# src/acnt_strat_synth/evals/groundedness.py
 import json
 from acnt_strat_synth.graph.nodes import extract_node
 
@@ -122,7 +122,7 @@ Pass rate >= 95% (one or two stragglers acceptable; if more, the synthesis promp
 
 **Code / commands:**
 ```python
-# acnt_strat_synth/evals/judge.py
+# src/acnt_strat_synth/evals/judge.py
 import json
 from pydantic import BaseModel, Field
 from langchain_openai import AzureChatOpenAI

@@ -84,17 +84,17 @@ grep -F 'Brand-X' data/seed/accounts_qual.jsonl | wc -l    # must print 1
 **Goal:** Typed objects for `AccountQuant` and `QualDoc` so downstream code gets autocomplete and rejects malformed records at the boundary.
 
 **Do:**
-- Create `acnt_strat_synth/data/schemas.py`.
+- Create `src/acnt_strat_synth/data/schemas.py`.
 - Use pydantic v2 — same dependency the synthesis node will use for structured output in Phase 4.
 
 **Code / commands:**
 ```bash
-mkdir -p acnt_strat_synth/data
-touch acnt_strat_synth/__init__.py acnt_strat_synth/data/__init__.py
+mkdir -p src/acnt_strat_synth/data
+touch src/acnt_strat_synth/__init__.py src/acnt_strat_synth/data/__init__.py
 ```
 
 ```python
-# acnt_strat_synth/data/schemas.py
+# src/acnt_strat_synth/data/schemas.py
 from typing import Literal
 from pydantic import BaseModel, Field
 
@@ -133,20 +133,20 @@ Prints two field lists — eight names for `AccountQuant`, three for `QualDoc`.
 **Goal:** `load_quant()` and `load_qual()` return validated, in-memory collections. This is what most downstream code calls.
 
 **Do:**
-- Create `acnt_strat_synth/data/loader.py`.
+- Create `src/acnt_strat_synth/data/loader.py`.
 - Read CSV via stdlib (no pandas needed at the data-access layer; downstream code can wrap in a DataFrame if it wants).
 - Read JSONL line by line.
 - Validate each row through the schema.
 
 **Code / commands:**
 ```python
-# acnt_strat_synth/data/loader.py
+# src/acnt_strat_synth/data/loader.py
 import csv
 import json
 from pathlib import Path
 from acnt_strat_synth.data.schemas import AccountQuant, QualDoc
 
-SEED_DIR = Path(__file__).resolve().parents[2] / "data" / "seed"
+SEED_DIR = Path(__file__).resolve().parents[3] / "data" / "seed"
 QUANT_PATH = SEED_DIR / "accounts_quant.csv"
 QUAL_PATH  = SEED_DIR / "accounts_qual.jsonl"
 
@@ -185,7 +185,7 @@ Prints `quant: 50 rows; qual: 173 docs` and `ok`.
 
 **If broken:**
 - `ValidationError` on a row → a CSV value didn't match the schema. Most likely a stale CSV; re-run `python3 scripts/seed_data.py`.
-- `FileNotFoundError` → run commands from the repo root, not from `acnt_strat_synth/`.
+- `FileNotFoundError` → run commands from the repo root, not from `src/acnt_strat_synth/`.
 
 **Time estimate:** ~15m.
 
@@ -196,12 +196,12 @@ Prints `quant: 50 rows; qual: 173 docs` and `ok`.
 **Goal:** `iter_accounts()` yields `(AccountQuant, list[QualDoc])` pairs lazily, one account at a time. This is the shape downstream batch jobs (Phase 4 batch run, Phase 5 evals) want when memory matters less than predictable per-record processing.
 
 **Do:**
-- Add `iter_accounts()` to `acnt_strat_synth/data/loader.py`.
+- Add `iter_accounts()` to `src/acnt_strat_synth/data/loader.py`.
 - Stream the qual JSONL once, group docs by account ID via a dict, then yield (quant, docs) tuples in quant-row order. HCP-005 yields an empty list — do not skip it.
 
 **Code / commands:**
 ```python
-# acnt_strat_synth/data/loader.py  (append)
+# src/acnt_strat_synth/data/loader.py  (append)
 import json
 from collections.abc import Iterator
 
@@ -251,13 +251,13 @@ Prints `total qual docs via iterator: 173` and `ok`.
 **Goal:** A function `assemble(account_id)` that produces the dict the LLM-facing nodes want. Decouples "what shape the data is on disk" from "what shape the LLM prompt expects."
 
 **Do:**
-- Add `acnt_strat_synth/data/ensemble.py`.
+- Add `src/acnt_strat_synth/data/ensemble.py`.
 - Return `{account_id, features, docs_by_source}` where `features` is the quant fields the predictive tool reads and `docs_by_source` groups qualitative text by `source_type`.
 - This is the contract Phase 3 (predictive tool input), Phase 4 (synthesis node prompt), and Phase 5 (eval harness) all consume — so set it once here.
 
 **Code / commands:**
 ```python
-# acnt_strat_synth/data/ensemble.py
+# src/acnt_strat_synth/data/ensemble.py
 from typing import TypedDict
 from acnt_strat_synth.data.loader import load_quant, _qual_by_account
 

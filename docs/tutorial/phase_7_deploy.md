@@ -11,17 +11,17 @@
 **Goal:** A single `POST /synthesize` route that accepts an account ID, runs the graph, and returns the synthesis JSON.
 
 **Do:**
-- Create `acnt_strat_synth/api/main.py`.
+- Create `src/acnt_strat_synth/api/main.py`.
 - Reuse `build_graph()` from Phase 4. Load `.env` on startup.
 
 **Code / commands:**
 ```bash
-mkdir -p acnt_strat_synth/api
-touch acnt_strat_synth/api/__init__.py
+mkdir -p src/acnt_strat_synth/api
+touch src/acnt_strat_synth/api/__init__.py
 ```
 
 ```python
-# acnt_strat_synth/api/main.py
+# src/acnt_strat_synth/api/main.py
 from dotenv import load_dotenv; load_dotenv()
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
@@ -92,7 +92,7 @@ WORKDIR /app
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-install-project --no-dev
 
-COPY acnt_strat_synth ./acnt_strat_synth
+COPY src ./src
 RUN uv sync --frozen --no-dev
 
 EXPOSE 8000

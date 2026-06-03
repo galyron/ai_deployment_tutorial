@@ -77,7 +77,7 @@ The repo root is the Python project — `uv init` runs here, no wrapper director
 <repo root>/
 ├── pyproject.toml, uv.lock, .python-version
 ├── .env                            # gitignored
-├── acnt_strat_synth/
+├── src/acnt_strat_synth/
 │   ├── config.py
 │   ├── data/        schemas + loader
 │   ├── retrieval/   chunking + AI Search client

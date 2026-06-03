@@ -246,7 +246,7 @@ az keyvault show --name "$KV" --query "properties.provisioningState" -o tsv
 
 **Goal:** A `uv`-managed project with the dependency set used throughout the tutorial.
 
-> This repo *is* the Python project. `pyproject.toml`, `acnt_strat_synth/`, `scripts/`, `data/`, `docs/`, and `tests/` all live at the repo root — there's no wrapper directory. `uv init --name` sets the package name in `pyproject.toml` without creating a subfolder.
+> This repo *is* the Python project. `pyproject.toml`, `src/acnt_strat_synth/`, `scripts/`, `data/`, `docs/`, and `tests/` all live at the repo root — there's no wrapper directory. `uv init --name` sets the package name in `pyproject.toml` without creating a subfolder.
 
 **Do:**
 - From the repo root, run `uv init` to add `pyproject.toml`, `uv.lock`, and `.python-version`.
@@ -259,7 +259,7 @@ az keyvault show --name "$KV" --query "properties.provisioningState" -o tsv
 uv init --name acnt-strat-synth --python 3.12
 
 # uv may drop a 'hello.py' starter file at the root — delete it; the project
-# code lives under acnt_strat_synth/.
+# code lives under src/acnt_strat_synth/.
 rm -f hello.py
 
 uv add \
@@ -283,7 +283,7 @@ ls pyproject.toml uv.lock .python-version
 - `Cannot determine Python interpreter` → `uv python install 3.12` then re-run `uv init`.
 - A resolver conflict on `openai` vs `langchain-openai` → re-run `uv lock --upgrade`.
 - `uv init` complains it can't initialize because the directory isn't empty → it shouldn't (it's non-destructive for existing files), but if it does, run `uv init --bare --name acnt-strat-synth` instead, which only writes `pyproject.toml`.
-- Later phases hit `ModuleNotFoundError: No module named 'acnt_strat_synth'` → your package directory in Step 0.7 must be named exactly `acnt_strat_synth/` (underscores). Hatch auto-discovers the package by normalizing the project name's hyphens to underscores; a mismatch means no editable install.
+- Later phases hit `ModuleNotFoundError: No module named 'src/acnt_strat_synth'` → your package directory in Step 0.7 must be named exactly `src/acnt_strat_synth/` (underscores). Hatch auto-discovers the package by normalizing the project name's hyphens to underscores; a mismatch means no editable install.
 
 **Time estimate:** ~10m.
 
@@ -296,7 +296,7 @@ ls pyproject.toml uv.lock .python-version
 **Do:**
 - Confirm `.env` is gitignored (the root `.gitignore` already excludes it).
 - Write `.env` from the variables exported earlier.
-- Add a `acnt_strat_synth/config.py` that loads and validates them.
+- Add a `src/acnt_strat_synth/config.py` that loads and validates them.
 
 **Code / commands:**
 ```bash
@@ -311,11 +311,11 @@ AZURE_SEARCH_KEY=$SEARCH_KEY
 AZURE_SEARCH_INDEX=hcp-evidence
 EOF
 
-mkdir -p acnt_strat_synth && touch acnt_strat_synth/__init__.py
+mkdir -p src/acnt_strat_synth && touch src/acnt_strat_synth/__init__.py
 ```
 
 ```python
-# acnt_strat_synth/config.py
+# src/acnt_strat_synth/config.py
 from dataclasses import dataclass
 from dotenv import load_dotenv
 import os

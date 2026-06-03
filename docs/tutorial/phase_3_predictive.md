@@ -17,12 +17,12 @@
 
 **Code / commands:**
 ```bash
-mkdir -p acnt_strat_synth/predict
-touch acnt_strat_synth/predict/__init__.py
+mkdir -p src/acnt_strat_synth/predict
+touch src/acnt_strat_synth/predict/__init__.py
 ```
 
 ```python
-# acnt_strat_synth/predict/score.py
+# src/acnt_strat_synth/predict/score.py
 import math
 import pandas as pd
 from acnt_strat_synth.data.loader import load_quant
@@ -68,7 +68,7 @@ uv run python -c "from acnt_strat_synth.predict.score import _risk; print(_risk(
 
 **Code / commands:**
 ```python
-# acnt_strat_synth/predict/score.py  (append)
+# src/acnt_strat_synth/predict/score.py  (append)
 _DF = load_quant().set_index("account_id")
 
 def score_account(account_id: str) -> float:
@@ -138,7 +138,7 @@ uv run python scripts/check_scoring.py
 
 **Code / commands:**
 ```python
-# acnt_strat_synth/predict/tool.py
+# src/acnt_strat_synth/predict/tool.py
 from langchain_core.tools import tool
 from acnt_strat_synth.predict.score import _DF, score_account
 

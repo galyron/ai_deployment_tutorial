@@ -11,17 +11,17 @@
 **Goal:** A single TypedDict that every node reads from and writes to. State carries the account ID, retrieved evidence, the predictive score, the synthesis output, and the HITL flag.
 
 **Do:**
-- Create `acnt_strat_synth/graph/state.py`.
+- Create `src/acnt_strat_synth/graph/state.py`.
 - Define `EvidenceItem` (matches the retrieval contract), `Synthesis` (the structured output we want), and `GraphState`.
 
 **Code / commands:**
 ```bash
-mkdir -p acnt_strat_synth/graph
-touch acnt_strat_synth/graph/__init__.py
+mkdir -p src/acnt_strat_synth/graph
+touch src/acnt_strat_synth/graph/__init__.py
 ```
 
 ```python
-# acnt_strat_synth/graph/state.py
+# src/acnt_strat_synth/graph/state.py
 from typing import TypedDict, Optional
 from pydantic import BaseModel, Field
 
@@ -75,7 +75,7 @@ uv run python -c "from acnt_strat_synth.graph.state import GraphState, Synthesis
 
 **Code / commands:**
 ```python
-# acnt_strat_synth/graph/nodes.py
+# src/acnt_strat_synth/graph/nodes.py
 from acnt_strat_synth.graph.state import GraphState, EvidenceItem
 from acnt_strat_synth.retrieval.search import retrieve
 import uuid
@@ -128,7 +128,7 @@ At least 2 evidence items; `source_type` set includes `comp_intel`.
 
 **Code / commands:**
 ```python
-# acnt_strat_synth/graph/nodes.py  (append)
+# src/acnt_strat_synth/graph/nodes.py  (append)
 from acnt_strat_synth.predict.tool import account_risk_score
 
 def score_node(state: GraphState) -> GraphState:
@@ -160,7 +160,7 @@ uv run python -c "from acnt_strat_synth.graph.nodes import score_node; print(sco
 
 **Code / commands:**
 ```python
-# acnt_strat_synth/graph/nodes.py  (append)
+# src/acnt_strat_synth/graph/nodes.py  (append)
 from langchain_openai import AzureChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage
 from acnt_strat_synth.graph.state import Synthesis
@@ -227,12 +227,12 @@ Headline prints; ungrounded count is `0`.
 **Goal:** A compiled graph: `extract → score → synth → END`, with a checkpointer so we can pause and resume in the next steps.
 
 **Do:**
-- Create `acnt_strat_synth/graph/build.py`.
+- Create `src/acnt_strat_synth/graph/build.py`.
 - Use `MemorySaver` for the in-process checkpointer.
 
 **Code / commands:**
 ```python
-# acnt_strat_synth/graph/build.py
+# src/acnt_strat_synth/graph/build.py
 from langgraph.graph import StateGraph, END, START
 from langgraph.checkpoint.memory import MemorySaver
 from acnt_strat_synth.graph.state import GraphState
@@ -311,7 +311,7 @@ uv run python scripts/run_one.py
 
 **Code / commands:**
 ```python
-# acnt_strat_synth/graph/build.py  (replace previous build_graph)
+# src/acnt_strat_synth/graph/build.py  (replace previous build_graph)
 from langgraph.graph import StateGraph, END, START
 from langgraph.checkpoint.memory import MemorySaver
 from acnt_strat_synth.graph.state import GraphState

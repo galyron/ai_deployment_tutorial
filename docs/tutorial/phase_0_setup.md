@@ -244,23 +244,19 @@ az keyvault show --name "$KV" --query "properties.provisioningState" -o tsv
 
 ### Step 0.6 — Initialize the local Python project with uv
 
-**Goal:** A `uv`-managed project with the dependency set used throughout the tutorial.
+**Goal:** A `uv`-managed project with the dependency set used throughout the tutorial, set up as an installable library so the package is importable from any script.
 
-> This repo *is* the Python project. `pyproject.toml`, `src/acnt_strat_synth/`, `scripts/`, `data/`, `docs/`, and `tests/` all live at the repo root — there's no wrapper directory. `uv init --name` sets the package name in `pyproject.toml` without creating a subfolder.
+> **`uv init --lib`, not plain `uv init`.** Plain `uv init` defaults to *application* mode: it omits the `[build-system]` block, so `uv sync` installs your declared dependencies but never installs *your* project. Result: `from acnt_strat_synth.X import Y` fails with `ModuleNotFoundError` no matter what you do with the package directory. The `--lib` flag instead creates a library project: it adds the `[build-system]` block (Hatchling backend), creates `src/<pkgname>/__init__.py` for you, and `uv sync` registers your project in the venv as an editable install. After that, the package is importable from scripts, tests, anywhere.
 
 **Do:**
-- From the repo root, run `uv init` to add `pyproject.toml`, `uv.lock`, and `.python-version`.
+- From the repo root, run `uv init --lib`. This adds `pyproject.toml`, `uv.lock`, `.python-version`, and `src/acnt_strat_synth/__init__.py`.
 - Pin Python `3.12`.
 - Add LangGraph, LangChain Azure OpenAI, Azure SDK clients, FastAPI, scikit-learn, pytest.
 
 **Code / commands:**
 ```bash
 # Run from the repo root (the directory that already contains README.md and docs/).
-uv init --name acnt-strat-synth --python 3.12
-
-# uv may drop a 'hello.py' starter file at the root — delete it; the project
-# code lives under src/acnt_strat_synth/.
-rm -f hello.py
+uv init --lib --name acnt-strat-synth --python 3.12
 
 uv add \
   langgraph langchain langchain-openai langchain-core \
@@ -275,15 +271,24 @@ uv add --dev pytest ruff
 ```bash
 uv run python -c "import langgraph, langchain_openai, azure.search.documents, fastapi; print('ok')"
 # Expected single line: ok
-ls pyproject.toml uv.lock .python-version
-# Expected: all three files present at the repo root
+
+ls pyproject.toml uv.lock .python-version src/acnt_strat_synth/__init__.py
+# Expected: all four paths present.
+
+grep -A1 build-system pyproject.toml
+# Expected:
+#   [build-system]
+#   requires = ["hatchling"]
+
+uv pip list 2>/dev/null | grep acnt-strat-synth
+# Expected: `acnt-strat-synth   0.1.0   <path to repo>`  (editable install registered)
 ```
 
 **If broken:**
-- `Cannot determine Python interpreter` → `uv python install 3.12` then re-run `uv init`.
+- `Cannot determine Python interpreter` → `uv python install 3.12` then re-run `uv init --lib`.
 - A resolver conflict on `openai` vs `langchain-openai` → re-run `uv lock --upgrade`.
-- `uv init` complains it can't initialize because the directory isn't empty → it shouldn't (it's non-destructive for existing files), but if it does, run `uv init --bare --name acnt-strat-synth` instead, which only writes `pyproject.toml`.
-- Later phases hit `ModuleNotFoundError: No module named 'src/acnt_strat_synth'` → your package directory in Step 0.7 must be named exactly `src/acnt_strat_synth/` (underscores). Hatch auto-discovers the package by normalizing the project name's hyphens to underscores; a mismatch means no editable install.
+- You forgot `--lib` and got an application project → either delete `pyproject.toml` and re-run `uv init --lib`, or manually append a `[build-system]` block with `requires = ["hatchling"]` and `build-backend = "hatchling.build"`, then `uv sync` again.
+- `ModuleNotFoundError: No module named 'acnt_strat_synth'` later → run `uv pip list | grep acnt-strat-synth`. If absent, your project isn't installed; the `[build-system]` block is probably missing or `src/acnt_strat_synth/__init__.py` doesn't exist.
 
 **Time estimate:** ~10m.
 
@@ -310,9 +315,9 @@ AZURE_SEARCH_ENDPOINT=$SEARCH_ENDPOINT
 AZURE_SEARCH_KEY=$SEARCH_KEY
 AZURE_SEARCH_INDEX=hcp-evidence
 EOF
-
-mkdir -p src/acnt_strat_synth && touch src/acnt_strat_synth/__init__.py
 ```
+
+(`src/acnt_strat_synth/__init__.py` was already created by `uv init --lib` in Step 0.6.)
 
 ```python
 # src/acnt_strat_synth/config.py
@@ -384,7 +389,7 @@ print("embedding dims:", len(v))
 
 idx_client = SearchIndexClient(settings.search_endpoint, AzureKeyCredential(settings.search_key))
 stats = idx_client.get_service_statistics()
-print("search storage used:", stats["counters"]["storage_size_counter"]["usage"], "bytes")
+print("search storage used:", stats.counters.storage_size_counter.usage, "bytes")
 ```
 
 ```bash

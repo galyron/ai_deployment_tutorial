@@ -39,11 +39,11 @@ def split_paragraphs(text: str) -> list[str]:
 def build_chunks() -> list[Chunk]:
     out = []
     for doc in load_qual():
-        for para in split_paragraphs(doc["text"]) or [doc["text"]]:
+        for para in split_paragraphs(doc.text) or [doc.text]:
             out.append(Chunk(
                 id=str(uuid.uuid4()),
-                account_id=doc["account_id"],
-                source_type=doc["source_type"],
+                account_id=doc.account_id,
+                source_type=doc.source_type,
                 text=para,
             ))
     return out

@@ -425,7 +425,7 @@ from acnt_strat_synth.graph.build import build_graph
 from acnt_strat_synth.data.loader import load_quant
 
 g = build_graph()
-ids = sorted(load_quant()["account_id"].tolist())
+ids = sorted(q.account_id for q in load_quant())
 
 out = []
 for aid in ids:

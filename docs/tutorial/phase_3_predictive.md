@@ -69,7 +69,12 @@ uv run python -c "from acnt_strat_synth.predict.score import _risk; print(_risk(
 **Code / commands:**
 ```python
 # src/acnt_strat_synth/predict/score.py  (append)
-_DF = load_quant().set_index("account_id")
+
+# load_quant() returns list[AccountQuant] (pydantic objects); the predictive
+# scorer below uses pandas (loc, iterrows) for tabular operations, so we
+# materialize once at module load. model_dump() turns each pydantic object
+# into a plain dict, which DataFrame can ingest.
+_DF = pd.DataFrame([q.model_dump() for q in load_quant()]).set_index("account_id")
 
 def score_account(account_id: str) -> float:
     if account_id not in _DF.index:

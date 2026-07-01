@@ -11,10 +11,12 @@
 **Goal:** A single TypedDict that every node reads from and writes to. State carries the account ID, retrieved evidence, the predictive score, the synthesis output, and the HITL flag.
 
 **Do:**
+
 - Create `src/acnt_strat_synth/graph/state.py`.
 - Define `EvidenceItem` (matches the retrieval contract), `Synthesis` (the structured output we want), and `GraphState`.
 
 **Code / commands:**
+
 ```bash
 mkdir -p src/acnt_strat_synth/graph
 touch src/acnt_strat_synth/graph/__init__.py
@@ -53,12 +55,14 @@ class GraphState(TypedDict, total=False):
 ```
 
 **Self-check:**
+
 ```bash
 uv run python -c "from acnt_strat_synth.graph.state import GraphState, Synthesis; print(Synthesis.model_fields.keys())"
 # Expected: dict_keys(['account_id','headline','claims','next_best_action','competitive_risk_flag','risk_score'])
 ```
 
 **If broken:**
+
 - `ImportError` for `TypedDict` → use `from typing import TypedDict` (Python 3.12 supports it directly).
 
 **Time estimate:** ~15m.
@@ -70,10 +74,12 @@ uv run python -c "from acnt_strat_synth.graph.state import GraphState, Synthesis
 **Goal:** Pull qualitative evidence for the target account and stash it on state with chunk IDs.
 
 **Do:**
+
 - Implement `extract_node(state)`.
 - Query the index with several topic-y queries to cover the four source types, dedupe by `chunk_id`.
 
 **Code / commands:**
+
 ```python
 # src/acnt_strat_synth/graph/nodes.py
 from acnt_strat_synth.graph.state import GraphState, EvidenceItem
@@ -105,6 +111,7 @@ def extract_node(state: GraphState) -> GraphState:
 ```
 
 **Self-check:**
+
 ```bash
 uv run python - <<'PY'
 from acnt_strat_synth.graph.nodes import extract_node
@@ -113,9 +120,11 @@ print(len(s["evidence"]), "items")
 print({e.source_type for e in s["evidence"]})
 PY
 ```
+
 At least 2 evidence items; `source_type` set includes `comp_intel`.
 
 **If broken:**
+
 - 0 items → run `uv run python scripts/check_traceability.py` to confirm the index is populated.
 
 **Time estimate:** ~15m.
@@ -127,6 +136,7 @@ At least 2 evidence items; `source_type` set includes `comp_intel`.
 **Goal:** Call the predictive tool from Phase 3 and stash the result on state. No LLM here — the agent doesn't get to "decide" the number.
 
 **Code / commands:**
+
 ```python
 # src/acnt_strat_synth/graph/nodes.py  (append)
 from acnt_strat_synth.predict.tool import account_risk_score
@@ -137,12 +147,14 @@ def score_node(state: GraphState) -> GraphState:
 ```
 
 **Self-check:**
+
 ```bash
 uv run python -c "from acnt_strat_synth.graph.nodes import score_node; print(score_node({'account_id':'HCP-001'})['score'])"
 # Expected dict with risk_score, features
 ```
 
 **If broken:**
+
 - `KeyError` → account ID typo; valid IDs are `HCP-001` through `HCP-050`.
 
 **Time estimate:** ~10m.
@@ -154,11 +166,13 @@ uv run python -c "from acnt_strat_synth.graph.nodes import score_node; print(sco
 **Goal:** GPT-4o emits a `Synthesis` object where every `Claim.cites` references a real `EvidenceItem.chunk_id` from state. This is the traceability proof.
 
 **Do:**
+
 - Use `with_structured_output(Synthesis)` to constrain the output.
 - Pass evidence as a numbered list keyed by `chunk_id`.
 - The prompt makes citation mandatory.
 
 **Code / commands:**
+
 ```python
 # src/acnt_strat_synth/graph/nodes.py  (append)
 from langchain_openai import AzureChatOpenAI
@@ -169,7 +183,9 @@ from acnt_strat_synth.config import settings
 _llm_synth = AzureChatOpenAI(
     azure_endpoint=settings.aoai_endpoint, api_key=settings.aoai_key,
     api_version=settings.aoai_api_version,
-    azure_deployment=settings.chat_deployment, temperature=0.2,
+    # gpt-5-mini fixes temperature at 1 (same as the o-series reasoning models).
+    # If you deploy a classic chat model instead, drop this to 0.2 for tighter output.
+    azure_deployment=settings.chat_deployment, temperature=1,
 ).with_structured_output(Synthesis)
 
 SYNTH_SYSTEM = """You are an account-strategy synthesist.
@@ -198,6 +214,7 @@ def synth_node(state):
 ```
 
 **Self-check:**
+
 ```bash
 uv run python - <<'PY'
 from acnt_strat_synth.graph.nodes import extract_node, score_node, synth_node
@@ -212,11 +229,14 @@ print("claims:", len(syn.claims), "ungrounded:", len(bad))
 assert not bad, bad
 PY
 ```
+
 Headline prints; ungrounded count is `0`.
 
 **If broken:**
+
 - `ungrounded != 0` → the model invented chunk IDs. Tighten the SYSTEM message: "If a chunk_id is not in the provided list, your output will be rejected."
 - `with_structured_output` errors → upgrade `langchain-openai`; older versions used `function_calling` mode that didn't enforce strictly.
+- `BadRequestError: 'temperature' does not support 0.2 with this model` → you're on gpt-5-mini (or another reasoning model) and left `temperature=0.2`. Set `temperature=1`; you can't tune the sampler on these models.
 
 **Time estimate:** ~20m.
 
@@ -227,10 +247,12 @@ Headline prints; ungrounded count is `0`.
 **Goal:** A compiled graph: `extract → score → synth → END`, with a checkpointer so we can pause and resume in the next steps.
 
 **Do:**
+
 - Create `src/acnt_strat_synth/graph/build.py`.
 - Use `MemorySaver` for the in-process checkpointer.
 
 **Code / commands:**
+
 ```python
 # src/acnt_strat_synth/graph/build.py
 from langgraph.graph import StateGraph, END, START
@@ -251,12 +273,15 @@ def build_graph():
 ```
 
 **Self-check:**
+
 ```bash
 uv run python -c "from acnt_strat_synth.graph.build import build_graph; g = build_graph(); print(g.get_graph().draw_ascii())"
 ```
+
 Prints an ASCII diagram with `extract` → `score` → `synth` → `__end__`.
 
 **If broken:**
+
 - `draw_ascii` requires `grandalf`; install with `uv add grandalf` or skip the visualization and just print `g.nodes`.
 
 **Time estimate:** ~15m.
@@ -268,9 +293,11 @@ Prints an ASCII diagram with `extract` → `score` → `synth` → `__end__`.
 **Goal:** Run the graph through to completion when `review_required=False`. This is the autonomous path.
 
 **Do:**
+
 - Build the graph, invoke for `HCP-002` with a thread ID, pre-approve the interrupt by passing `approved=True`.
 
 **Code / commands:**
+
 ```python
 # scripts/run_one.py
 from acnt_strat_synth.graph.build import build_graph
@@ -296,6 +323,7 @@ uv run python scripts/run_one.py
 **Self-check:** Output shows a non-empty headline, a risk score between 0 and 1, 3–5 claims each with at least one `cites` entry.
 
 **If broken:**
+
 - `interrupt_before` is active for both autonomous and HITL paths — the second `g.invoke(None, config=cfg)` is required to step past it. If you skip it, `state["synthesis"]` will be `None`.
 
 **Time estimate:** ~15m.
@@ -307,9 +335,11 @@ uv run python scripts/run_one.py
 **Goal:** When `review_required=True`, the graph pauses before synthesis and waits for `approved` on state. When `False`, it proceeds unconditionally.
 
 **Do:**
+
 - Replace the unconditional interrupt with a conditional gate: a tiny `gate_node` between `score` and `synth` that decides whether to interrupt.
 
 **Code / commands:**
+
 ```python
 # src/acnt_strat_synth/graph/build.py  (replace previous build_graph)
 from langgraph.graph import StateGraph, END, START
@@ -360,6 +390,7 @@ uv run python scripts/run_one.py
 **Self-check:** Prints `autonomous synthesis present: True`.
 
 **If broken:**
+
 - `True` is unexpectedly `False` → `interrupt_before=["wait"]` triggers even when the gate routes to `go`. Replace with `interrupt_before=[]` and use the `wait` node's interrupt semantics implicitly — LangGraph only interrupts before nodes that are actually scheduled.
 
 **Time estimate:** ~20m.
@@ -371,9 +402,11 @@ uv run python scripts/run_one.py
 **Goal:** When `review_required=True`, the graph stops at `wait`. A second invocation with `approved=True` completes the synthesis.
 
 **Do:**
+
 - Run twice with the same `thread_id`. First call produces no synthesis; second call (with `approved=True`) does.
 
 **Code / commands:**
+
 ```python
 # scripts/run_hitl.py
 from acnt_strat_synth.graph.build import build_graph
@@ -397,11 +430,13 @@ uv run python scripts/run_hitl.py
 ```
 
 **Self-check:**
+
 - First print: `pause: synthesis is None`
 - `next nodes:` shows `('wait',)`.
 - Second print: a non-empty `headline` from the synthesis.
 
 **If broken:**
+
 - Second invocation re-runs from start → `thread_id` differs; reuse the same config dict.
 - `get_state(cfg).next` is empty → the checkpointer wasn't passed in `compile()`.
 
@@ -414,9 +449,11 @@ uv run python scripts/run_hitl.py
 **Goal:** A loop over `HCP-001..HCP-050` that produces a synthesis (or `None` for the graceful-degradation case) per account.
 
 **Do:**
+
 - Run autonomously; persist results as JSONL for Phase 5.
 
 **Code / commands:**
+
 ```python
 # scripts/run_batch.py
 import json
@@ -452,6 +489,7 @@ uv run python scripts/run_batch.py
 ```
 
 **Self-check:**
+
 ```bash
 uv run python - <<'PY'
 import json
@@ -462,9 +500,11 @@ print("with synthesis:", got, "without:", 50 - got)
 # Expected: at least 49 with synthesis (HCP-005 may still get one off the score alone)
 PY
 ```
+
 At least 49 syntheses present.
 
 **If broken:**
+
 - All HCP-005 fields are `None` → that's expected only if you chose to skip synthesis when evidence is empty. The reference implementation still calls synth; the synth prompt handles the "no evidence" branch and produces a score-only synthesis citing `PREDICT`.
 
 **Time estimate:** ~15m.

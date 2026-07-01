@@ -137,7 +137,9 @@ class Judgement(BaseModel):
 _llm_judge = AzureChatOpenAI(
     azure_endpoint=settings.aoai_endpoint, api_key=settings.aoai_key,
     api_version=settings.aoai_api_version,
-    azure_deployment=settings.chat_deployment, temperature=0,
+    # gpt-5-mini fixes temperature at 1. On a classic chat model, use 0 for
+    # the judge -- determinism matters more here than for the synthesist.
+    azure_deployment=settings.chat_deployment, temperature=1,
 ).with_structured_output(Judgement)
 
 JUDGE_SYSTEM = (

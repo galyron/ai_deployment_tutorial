@@ -69,6 +69,8 @@ uv run python -c "from acnt_strat_synth.graph.state import GraphState, Synthesis
 
 ---
 
+
+
 ### Step 4.2 — The Extract node
 
 **Goal:** Pull qualitative evidence for the target account and stash it on state with chunk IDs.
@@ -131,6 +133,8 @@ At least 2 evidence items; `source_type` set includes `comp_intel`.
 
 ---
 
+
+
 ### Step 4.3 — The Score node
 
 **Goal:** Call the predictive tool from Phase 3 and stash the result on state. No LLM here — the agent doesn't get to "decide" the number.
@@ -160,6 +164,8 @@ uv run python -c "from acnt_strat_synth.graph.nodes import score_node; print(sco
 **Time estimate:** ~10m.
 
 ---
+
+
 
 ### Step 4.4 — The Synthesis node (structured output + citations)
 
@@ -242,6 +248,8 @@ Headline prints; ungrounded count is `0`.
 
 ---
 
+
+
 ### Step 4.5 — Wire the LangGraph graph
 
 **Goal:** A compiled graph: `extract → score → synth → END`, with a checkpointer so we can pause and resume in the next steps.
@@ -288,6 +296,8 @@ Prints an ASCII diagram with `extract` → `score` → `synth` → `__end__`.
 
 ---
 
+
+
 ### Step 4.6 — Single-account end-to-end run (autonomous mode)
 
 **Goal:** Run the graph through to completion when `review_required=False`. This is the autonomous path.
@@ -329,6 +339,8 @@ uv run python scripts/run_one.py
 **Time estimate:** ~15m.
 
 ---
+
+
 
 ### Step 4.7 — Make the HITL switch real
 
@@ -397,6 +409,8 @@ uv run python scripts/run_one.py
 
 ---
 
+
+
 ### Step 4.8 — Pause and resume with a review toggle
 
 **Goal:** When `review_required=True`, the graph stops at `wait`. A second invocation with `approved=True` completes the synthesis.
@@ -443,6 +457,8 @@ uv run python scripts/run_hitl.py
 **Time estimate:** ~15m.
 
 ---
+
+
 
 ### Step 4.9 — Batch run over all accounts
 

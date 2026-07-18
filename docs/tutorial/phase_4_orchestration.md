@@ -290,7 +290,7 @@ Prints an ASCII diagram with `extract` → `score` → `synth` → `__end__`.
 
 **If broken:**
 
-- `draw_ascii` requires `grandalf`; install with `uv add grandalf` or skip the visualization and just print `g.nodes`.
+- `draw_ascii` requires `grandalf`; install with `uv add --dev grandalf` (deployment doesn't need it -- it's only used by this self-check) or skip the visualization and just print `g.nodes`.
 
 **Time estimate:** ~15m.
 
